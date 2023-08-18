@@ -11,7 +11,14 @@ def generate_launch_description() -> LaunchDescription:
     robot_description = LBRDescriptionMixin.param_robot_description(sim=False)
     ld.add_action(
         Node(
-            package="lbr_demos_fri_ros2_advanced_cpp",
+            package="lbr_end_control",
+            executable="test_end_publisher",
+            output="screen"
+        )
+    )
+    ld.add_action(
+        Node(
+            package="lbr_end_control",
             executable="end_control_node",
             output="screen",
             parameters=[robot_description],
