@@ -5,7 +5,9 @@
 #include "lbr_fri_msgs/msg/lbr_command.hpp"
 #include "lbr_fri_msgs/msg/lbr_state.hpp"
 #include "lbr_fri_ros2/app.hpp"
-
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
+#include "tf2/exceptions.h"
 #include "end_controller.hpp"
 
 class EndControlNode : public rclcpp::Node {
@@ -17,10 +19,14 @@ public:
     this->declare_parameter<std::string>("end_effector_link", "link_ee");
     this->declare_parameter<std::string>("end_effector_link_expect", "link_ee_expect");
 
+    base_link_= this->get_parameter("base_link").as_string();
+    end_effector_link_= this->get_parameter("end_effector_link").as_string();
+    end_effector_link_expect_= this->get_parameter("end_effector_link_expect").as_string();
+
     end_controller_ = std::make_unique<EndController>(
         this->get_parameter("robot_description").as_string(),
-        this->get_parameter("base_link").as_string(),
-        this->get_parameter("end_effector_link").as_string());
+        base_link_,
+        end_effector_link_);
 
     lbr_command_pub_ = create_publisher<lbr_fri_msgs::msg::LBRCommand>(
         "/lbr/command", rclcpp::QoS(1)
@@ -33,6 +39,10 @@ public:
             .deadline(std::chrono::milliseconds(10)),
         std::bind(&EndControlNode::on_lbr_state, this, std::placeholders::_1));
 
+    expect_tf_buffer_ =
+            std::make_unique<tf2_ros::Buffer>(this->get_clock()); // default 10s
+    tf_listener_ =
+            std::make_shared<tf2_ros::TransformListener>(*expect_tf_buffer_);
 
   }
 
@@ -42,9 +52,19 @@ protected:
       return;
     }
 
+    try{
+      command_tf_ = expect_tf_buffer_->lookupTransform(
+              end_effector_link_expect_, base_link_, tf2::TimePointZero);
+    } catch (tf2::TransformException &ex) {
+      RCLCPP_INFO(
+              this->get_logger(), "Could not transform %s to %s: %s",
+              base_link_.c_str(), end_effector_link_expect_.c_str(), ex.what());
+      return;
+    }
+
     smooth_lbr_state_(lbr_state, 0.95);
 
-    auto lbr_command = end_controller_->update(lbr_state_);
+    auto lbr_command = end_controller_->update(lbr_state_, command_tf_);
     lbr_command_pub_->publish(lbr_command);
   };
 
@@ -65,9 +85,15 @@ protected:
 
   bool init_{false};
   lbr_fri_msgs::msg::LBRState lbr_state_;
-
+  std::string base_link_;
+  std::string end_effector_link_;
+  std::string end_effector_link_expect_;
   rclcpp::Publisher<lbr_fri_msgs::msg::LBRCommand>::SharedPtr lbr_command_pub_;
   rclcpp::Subscription<lbr_fri_msgs::msg::LBRState>::SharedPtr lbr_state_sub_;
+  tf2_ros::Buffer::SharedPtr expect_tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  geometry_msgs::msg::TransformStamped command_tf_;
+
 
   std::unique_ptr<EndController> end_controller_;
 };

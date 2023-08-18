@@ -26,6 +26,8 @@ ament_target_dependencies(end_control_node
   lbr_fri_msgs
   orocos_kdl
   rclcpp
+  tf2_ros
+  tf2
 )
 
 target_link_libraries(end_control_node
