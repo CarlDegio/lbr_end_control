@@ -16,7 +16,7 @@ public:
         this->declare_parameter<double>("frequency", 100.0);
 
         parent_frame_ = this->get_parameter("base_link").as_string();
-        child_frame_ = this->get_parameter("end_effector_link").as_string();
+        child_frame_ = this->get_parameter("end_effector_link_expect").as_string();
 
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
         timer_ = this->create_wall_timer(
@@ -36,8 +36,8 @@ private:
         t.transform.translation.x = 0.5;
         t.transform.translation.y = 0.0;
         t.transform.translation.z = 0.6;
-        t.transform.rotation.x = 0.0; //0.383
-        t.transform.rotation.y = 1.0; //0.924
+        t.transform.rotation.x = 0.383; //0.383
+        t.transform.rotation.y = 0.924; //0.924
         t.transform.rotation.z = 0.0;
         t.transform.rotation.w = 0.0;
 

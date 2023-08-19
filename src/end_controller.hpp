@@ -27,7 +27,7 @@ public:
                        const std::string &base_link = "link_0",
                        const std::string &end_effector_link = "link_ee",
                        const JointVector &dq_gains = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
-                       const CartesianVector &dx_gains = {1.5, 1.5, 1.5, 1.0, 1.0, 1.0})
+                       const CartesianVector &dx_gains = {200, 200, 200, 200, 200, 200})
       : dq_gains_(dq_gains), dx_gains_(dx_gains) {
     if (!kdl_parser::treeFromString(robot_description, tree_)) {
       throw std::runtime_error("Failed to construct kdl tree from robot description.");
@@ -56,8 +56,8 @@ public:
                                               command_tf.transform.translation.y,
                                               command_tf.transform.translation.z));
     auto pos_error= ee_frame_expect_.p - ee_frame_.p;
-    auto rotation_error = ee_frame_.M.Inverse()* ee_frame_expect_.M; // TODO: check this
-    auto rotation_error_vec = rotation_error.GetRot();
+    auto rotation_error = ee_frame_.M.Inverse()* ee_frame_expect_.M;
+    auto rotation_error_vec = ee_frame_.M * rotation_error.GetRot();
     end_error_ << pos_error.x(), pos_error.y(), pos_error.z(),
         rotation_error_vec.x(), rotation_error_vec.y(), rotation_error_vec.z();
 
@@ -72,7 +72,6 @@ public:
       dq_[i]=std::clamp(dq_[i],-dq_abs_max_[i],dq_abs_max_[i]);
       lbr_command_.joint_position[i] =
           lbr_state.measured_joint_position[i] + dq_[i] * lbr_state.sample_time;
-      lbr_command_.joint_position[i] = lbr_state.measured_joint_position[i];
     }
 
     LBRCommand_safe_check();
@@ -91,7 +90,7 @@ protected:
   Eigen::Matrix<double, KUKA::FRI::LBRState::NUMBER_OF_JOINTS, 6> jacobian_inv_;
   KDL::JntArray q_;
   JointVector dq_;
-  JointVector dq_abs_max_={M_PI/180*10,M_PI/180*10,M_PI/180*10,M_PI/180*10,M_PI/180*10,M_PI/180*10,M_PI/180*10};
+  JointVector dq_abs_max_={5,5,5,5,10,10,10};
   JointVector dq_gains_;
   JointVector q_range_low_={-M_PI/180*165,-M_PI/180*115,-M_PI/180*165,-M_PI/180*115,-M_PI/180*165,-M_PI/180*115,-M_PI/180*170};
   JointVector q_range_up_={M_PI/180*165,M_PI/180*115,M_PI/180*165,M_PI/180*115,M_PI/180*165,M_PI/180*115,M_PI/180*170};
