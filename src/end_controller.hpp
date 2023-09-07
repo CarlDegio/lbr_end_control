@@ -78,6 +78,10 @@ public:
     return lbr_command_;
   };
 
+  const KDL::Frame &get_end_frame(){
+    return ee_frame_;
+  }
+
 protected:
   lbr_fri_msgs::msg::LBRCommand lbr_command_;
   KDL::Tree tree_;
