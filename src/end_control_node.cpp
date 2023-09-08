@@ -54,6 +54,18 @@ protected:
       return;
     }
 
+    KDL::Frame end_frame_ = end_controller_->get_end_frame(lbr_state_);
+    geometry_msgs::msg::TransformStamped t;
+    t.header.stamp = this->get_clock()->now();
+    t.header.frame_id = base_link_;
+    t.child_frame_id = end_effector_link_;
+    t.transform.translation.x = end_frame_.p.x();
+    t.transform.translation.y = end_frame_.p.y();
+    t.transform.translation.z = end_frame_.p.z();
+    end_frame_.M.GetQuaternion(t.transform.rotation.x,t.transform.rotation.y,
+                               t.transform.rotation.z,t.transform.rotation.w);
+    tf_broadcaster_->sendTransform(t);
+
     try{
       command_tf_ = expect_tf_buffer_->lookupTransform(
               base_link_, end_effector_link_expect_, tf2::TimePointZero);
@@ -69,17 +81,6 @@ protected:
     auto lbr_command = end_controller_->update(lbr_state_, command_tf_);
     lbr_command_pub_->publish(lbr_command);
 
-    KDL::Frame end_frame_ = end_controller_->get_end_frame();
-    geometry_msgs::msg::TransformStamped t;
-    t.header.stamp = this->get_clock()->now();
-    t.header.frame_id = base_link_;
-    t.child_frame_id = end_effector_link_;
-    t.transform.translation.x = end_frame_.p.x();
-    t.transform.translation.y = end_frame_.p.y();
-    t.transform.translation.z = end_frame_.p.z();
-    end_frame_.M.GetQuaternion(t.transform.rotation.x,t.transform.rotation.y,
-                               t.transform.rotation.z,t.transform.rotation.w);
-    tf_broadcaster_->sendTransform(t);
   };
 
   void smooth_lbr_state_(const lbr_fri_msgs::msg::LBRState::SharedPtr lbr_state, double alpha) {

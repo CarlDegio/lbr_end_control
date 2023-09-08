@@ -44,10 +44,8 @@ public:
 
   const lbr_fri_msgs::msg::LBRCommand &update(const lbr_fri_msgs::msg::LBRState &lbr_state,
                                               const geometry_msgs::msg::TransformStamped &command_tf) {
-    std::memcpy(q_.data.data(), lbr_state.measured_joint_position.data(),
-                sizeof(double) * KUKA::FRI::LBRState::NUMBER_OF_JOINTS);
 
-    fk_solver_->JntToCart(q_, ee_frame_);
+
     ee_frame_expect_ = KDL::Frame(KDL::Rotation::Quaternion(command_tf.transform.rotation.x,
                                                            command_tf.transform.rotation.y,
                                                            command_tf.transform.rotation.z,
@@ -78,7 +76,10 @@ public:
     return lbr_command_;
   };
 
-  const KDL::Frame &get_end_frame(){
+  const KDL::Frame &get_end_frame(const lbr_fri_msgs::msg::LBRState &lbr_state){
+    std::memcpy(q_.data.data(), lbr_state.measured_joint_position.data(),
+                sizeof(double) * KUKA::FRI::LBRState::NUMBER_OF_JOINTS);
+    fk_solver_->JntToCart(q_, ee_frame_);
     return ee_frame_;
   }
 
