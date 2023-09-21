@@ -54,6 +54,8 @@ protected:
       return;
     }
 
+    smooth_lbr_state_(lbr_state, 0.0);// open loop, no noise problem
+
     KDL::Frame end_frame_ = end_controller_->get_end_frame(lbr_state_);
     geometry_msgs::msg::TransformStamped t;
     t.header.stamp = this->get_clock()->now();
@@ -76,7 +78,7 @@ protected:
       return;
     }
 
-    smooth_lbr_state_(lbr_state, 0.0);// open loop, no noise problem
+
 
     auto lbr_command = end_controller_->update(lbr_state_, command_tf_);
     lbr_command_pub_->publish(lbr_command);

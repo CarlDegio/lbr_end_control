@@ -26,8 +26,8 @@ public:
   EndController(const std::string &robot_description,
                        const std::string &base_link = "link_0",
                        const std::string &end_effector_link = "link_ee",
-                       const JointVector &dq_gains = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
-                       const CartesianVector &dx_gains = {200, 200, 200, 200, 200, 200})
+                       const JointVector &dq_gains = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0},
+                       const CartesianVector &dx_gains = {50, 50, 50, 50., 50., 0.})
       : dq_gains_(dq_gains), dx_gains_(dx_gains) {
     if (!kdl_parser::treeFromString(robot_description, tree_)) {
       throw std::runtime_error("Failed to construct kdl tree from robot description.");
@@ -65,6 +65,7 @@ public:
     f_drive_= dx_gains_.asDiagonal() * end_error_;
 
     dq_ = dq_gains_.asDiagonal() * jacobian_inv_ * f_drive_;
+    dq_[6]=-rotation_error_vec.z()*100;
 
     for (int i = 0; i < 7; i++) {
       dq_[i]=std::clamp(dq_[i],-dq_abs_max_[i],dq_abs_max_[i]);
@@ -95,7 +96,7 @@ protected:
   Eigen::Matrix<double, KUKA::FRI::LBRState::NUMBER_OF_JOINTS, 6> jacobian_inv_;
   KDL::JntArray q_;
   JointVector dq_;
-  JointVector dq_abs_max_={5,5,5,5,10,10,10};
+  JointVector dq_abs_max_={5,5,5,5,10,10,20};
   JointVector dq_gains_;
   JointVector q_range_low_={-M_PI/180*165,-M_PI/180*115,-M_PI/180*165,-M_PI/180*115,-M_PI/180*165,-M_PI/180*115,-M_PI/180*170};
   JointVector q_range_up_={M_PI/180*165,M_PI/180*115,M_PI/180*165,M_PI/180*115,M_PI/180*165,M_PI/180*115,M_PI/180*170};
